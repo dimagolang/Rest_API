@@ -36,6 +36,8 @@ func initDB() {
 	log.Fatal("❌ Failed to connect to database after multiple attempts:", err)
 }
 
+// ... существующий код ...
+
 func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
@@ -48,8 +50,41 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
+	// Добавление новых маршрутов для работы с рейсами
+	r.POST("/flights", createFlight)       // Создание рейса
+	r.GET("/flights/:id", getFlight)       // Получение рейса по ID
+	r.PUT("/flights/:id", updateFlight)    // Обновление рейса по ID
+	r.DELETE("/flights/:id", deleteFlight) // Удаление рейса по ID
+
 	log.Println("🚀 Server is running on port 8083...")
 	if err := r.Run(":8083"); err != nil {
 		log.Fatal("❌ Failed to start server:", err)
 	}
+}
+
+// Обработчик для создания рейса
+func createFlight(c *gin.Context) {
+	// Логика создания рейса
+	c.JSON(http.StatusCreated, gin.H{"message": "Flight created"})
+}
+
+// Обработчик для получения рейса
+func getFlight(c *gin.Context) {
+	id := c.Param("id")
+	// Логика получения рейса по ID
+	c.JSON(http.StatusOK, gin.H{"message": "Flight details", "id": id})
+}
+
+// Обработчик для обновления рейса
+func updateFlight(c *gin.Context) {
+	id := c.Param("id")
+	// Логика обновления рейса по ID
+	c.JSON(http.StatusOK, gin.H{"message": "Flight updated", "id": id})
+}
+
+// Обработчик для удаления рейса
+func deleteFlight(c *gin.Context) {
+	id := c.Param("id")
+	// Логика удаления рейса по ID
+	c.JSON(http.StatusOK, gin.H{"message": "Flight deleted", "id": id})
 }
