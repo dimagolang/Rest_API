@@ -1,18 +1,21 @@
 FROM golang:1.23-alpine AS builder
 
-WORKDIR /
+WORKDIR /app
 
+
+RUN go mod download
 COPY go.mod go.sum ./
+
+
+RUN apk add --no-cache git
+RUN go mod tidy
 RUN go mod download
 
 COPY . .
 
-RUN go build -o /app/api-gateway ./cmd/
-RUN ls -l /app
-
 FROM alpine:latest
 
-WORKDIR /app
-COPY --from=builder /app/api-gateway .
+RUN go build -o main .
 
-ENTRYPOINT ["./api-gateway"]
+EXPOSE 8080
+CMD ["/app/main"]

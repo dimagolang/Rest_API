@@ -1,46 +1,38 @@
+version: "3.9"
+
 services:
+  go-api:
+    build: ./
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@postgres:5432/postgres?sslmode=disable"
+    restart: always
+
   postgres:
     image: postgres:14.10-alpine
-    container_name: postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: flights_db
+      POSTGRES_DB: postgres
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Скрипт для инициализации БД
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 10s
       retries: 5
-    networks:
-      - awesomeproject1_app_network
-
-  flight-api:
-    build: .
-    container_name: flight_api
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "8083:8083"
-    environment:
-      - GIN_MODE=release
-      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/flights_db?sslmode=disable
-    restart: unless-stopped
-    networks:
-      - awesomeproject1_app_network
+      start_period: 10s
+    restart: always
 
 volumes:
   pgdata:
 
-networks:
-  awesomeproject1_app_network:
+
 
 
 
