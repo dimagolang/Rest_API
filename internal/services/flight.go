@@ -13,14 +13,23 @@ type Flight struct {
 	DestinationFrom string `json:"destination_from"`
 	DestinationTo   string `json:"destination_to"`
 }
+type FlightService struct {
+	flights map[int]Flight
+}
 
 var (
 	flightIDCounter = 1
 	mutex           sync.Mutex
-	flights         = make(map[int]Flight)
 )
 
-func CreateFlight(c *gin.Context) {
+func NewFlightService() *FlightService {
+
+	return &FlightService{
+		flights: make(map[int]Flight),
+	}
+}
+
+func (s *FlightService) CreateFlight(c *gin.Context) {
 	var flight Flight
 	if err := c.ShouldBindJSON(&flight); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
@@ -32,12 +41,12 @@ func CreateFlight(c *gin.Context) {
 	flightIDCounter++
 	mutex.Unlock()
 
-	flights[flight.FlightID] = flight
+	s.flights[flight.FlightID] = flight
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Flight created", "flight": flight})
 }
 
-func GetFlight(c *gin.Context) {
+func (s *FlightService) GetFlight(c *gin.Context) {
 	id := c.Param("id")
 	flightID := convertID(id)
 	if flightID == 0 {
@@ -45,7 +54,7 @@ func GetFlight(c *gin.Context) {
 		return
 	}
 
-	flight, exists := flights[flightID]
+	flight, exists := s.flights[flightID]
 	if !exists {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Flight not found"})
 		return
@@ -54,7 +63,7 @@ func GetFlight(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Flight details", "flight": flight})
 }
 
-func UpdateFlight(c *gin.Context) {
+func (s *FlightService) UpdateFlight(c *gin.Context) {
 	id := c.Param("id")
 	flightID := convertID(id)
 	if flightID == 0 {
@@ -68,18 +77,18 @@ func UpdateFlight(c *gin.Context) {
 		return
 	}
 
-	if _, exists := flights[flightID]; !exists {
+	if _, exists := s.flights[flightID]; !exists {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Flight not found"})
 		return
 	}
 
 	updatedFlight.FlightID = flightID
-	flights[flightID] = updatedFlight
+	s.flights[flightID] = updatedFlight
 
 	c.JSON(http.StatusOK, gin.H{"message": "Flight updated", "flight": updatedFlight})
 }
 
-func DeleteFlight(c *gin.Context) {
+func (s *FlightService) DeleteFlight(c *gin.Context) {
 	id := c.Param("id")
 	flightID := convertID(id)
 	if flightID == 0 {
@@ -87,12 +96,12 @@ func DeleteFlight(c *gin.Context) {
 		return
 	}
 
-	if _, exists := flights[flightID]; !exists {
+	if _, exists := s.flights[flightID]; !exists {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Flight not found"})
 		return
 	}
 
-	delete(flights, flightID)
+	delete(s.flights, flightID)
 	c.JSON(http.StatusOK, gin.H{"message": "Flight deleted", "id": flightID})
 }
 

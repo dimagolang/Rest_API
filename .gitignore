@@ -25,6 +25,7 @@ vendor/
 
 # IDE and editor files
 .idea
+.idea/
 .vscode/
 *.iml
 
@@ -33,4 +34,4 @@ vendor/
 Thumbs.db
 
 /coverage.out
-/coverage.html
+/coverage.html/
