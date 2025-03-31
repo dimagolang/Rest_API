@@ -1,7 +1,6 @@
 package http_server
 
 import (
-	"Rest_API/internal/services"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -9,18 +8,21 @@ import (
 
 // Server структура сервера с роутингом и зависимостями
 type Server struct {
-	flightsService *services.FlightService
-	cfg            struct{ serverPort string } // Добавляем конфигурацию
+	flightsService flights
+	cfg            config // Добавляем конфигурацию
+}
+type config struct {
+	serverPort string
 }
 
 // NewServer создает экземпляр HTTP-сервера с настройкой роутинга
 func NewServer(
-	flightsService *services.FlightService,
+	flightsService flights,
 	serverPort string, // Передаем конфигурацию
 ) *Server {
 	server := &Server{
 		flightsService: flightsService,
-		cfg:            struct{ serverPort string }{serverPort}, // Сохраняем конфигурацию
+		cfg:            config{serverPort}, // Сохраняем конфигурацию
 	}
 
 	return server

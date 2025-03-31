@@ -1,11 +1,16 @@
-package config
+package app
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
+
+const defaultConfigFilePath = "./.env"
 
 // Config struct holds the database configuration
 type Config struct {
@@ -37,4 +42,31 @@ func LoadConfig() (*Config, error) {
 
 	slog.Info("Configuration loaded successfully")
 	return config, nil
+}
+
+func GetConfigReader(path string) (*viper.Viper, error) {
+	const op = "app.GetConfigReader"
+
+	if path == "" {
+		path = defaultConfigFilePath
+	}
+
+	conf := viper.New()
+	conf.SetConfigFile(path)
+	conf.SetConfigType("env")
+	conf.AutomaticEnv()
+
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		err = conf.WriteConfigAs(path)
+		if err != nil {
+			return nil, fmt.Errorf("%s: creating config file error: %w", op, err)
+		}
+	}
+
+	err := conf.ReadInConfig()
+	if err != nil {
+		return nil, fmt.Errorf("%s: config reading error: %w", op, err)
+	}
+
+	return conf, nil
 }
