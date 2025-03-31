@@ -3,8 +3,6 @@ package app
 import (
 	"Rest_API/internal/service"
 	"Rest_API/server/http_server"
-	"github.com/rs/zerolog"
-	"os"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
@@ -13,14 +11,18 @@ import (
 var viperInstance *viper.Viper
 
 type App struct {
-	cfg *Config
+	cfg    *Config
+	server *http_server.Server // Добавляем поле для сервера
 }
 
 func (a *App) Init() {
 	// Инициализация логгера с использованием zerolog
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	if err := InitLogger("debug", "", true); err != nil {
+		log.Fatal().Err(err).Msg("Ошибка инициализации логгера")
+		return
+	}
 
-	const logTrace string = "App.Init"
+	const op string = "App.Init"
 
 	// Загрузка конфигурации
 	conf, err := GetConfigReader("")
@@ -36,12 +38,7 @@ func (a *App) Init() {
 	flightsService := service.NewFlightService()
 
 	// Создание HTTP-сервера
-	server := http_server.NewServer(flightsService, a.cfg.ServerPort) // Используем a.cfg.ServerPort
-
-	// Запуск сервера
-	server.Run()
-
-	log.Info().Msg("Сервер успешно запущен на порту " + a.cfg.ServerPort) // Используем a.cfg.ServerPort
+	a.server = http_server.NewServer(flightsService, a.cfg.ServerPort) // Сохраняем сервер в поле структуры
 }
 
 func (a *App) setConfig() {
@@ -50,5 +47,12 @@ func (a *App) setConfig() {
 }
 
 func (a *App) Run() {
+	// Инициализация приложения
 	a.Init()
+
+	// Запуск сервера
+	a.server.Run() // Используем поле структуры для запуска сервера
+
+	// Логируем успешный запуск сервера
+	log.Info().Msg("Сервер успешно запущен на порту " + a.cfg.ServerPort)
 }
