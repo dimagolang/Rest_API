@@ -1,4 +1,4 @@
-package services
+package service
 
 import (
 	"fmt"
@@ -61,6 +61,18 @@ func (s *FlightService) GetFlight(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Flight details", "flight": flight})
+}
+func (s *FlightService) GetFlights(c *gin.Context) {
+
+	capacity := len(s.flights)
+
+	flights := make([]Flight, 0, capacity)
+
+	for _, flight := range s.flights {
+		flights = append(flights, flight)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "All flights", "flights": flights})
 }
 
 func (s *FlightService) UpdateFlight(c *gin.Context) {

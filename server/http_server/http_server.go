@@ -1,7 +1,6 @@
 package http_server
 
 import (
-	"Rest_API/internal/services"
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
@@ -9,24 +8,27 @@ import (
 
 // Server структура сервера с роутингом и зависимостями
 type Server struct {
-	flightsService *services.FlightService
+	flightsService flights
+	cfg            config // Добавляем конфигурацию
+}
+type config struct {
+	serverPort string
 }
 
 // NewServer создает экземпляр HTTP-сервера с настройкой роутинга
 func NewServer(
-
-	flightsService *services.FlightService,
-
+	flightsService flights,
+	serverPort string, // Передаем конфигурацию
 ) *Server {
 	server := &Server{
-
 		flightsService: flightsService,
+		cfg:            config{serverPort}, // Сохраняем конфигурацию
 	}
 
 	return server
 }
 
-// запускает сервер
+// Run запускает сервер
 func (s *Server) Run() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
@@ -36,13 +38,14 @@ func (s *Server) Run() {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	r.POST("/flights", s.flightsService.CreateFlight)
+	r.POST("/flight", s.flightsService.CreateFlight)
 	r.GET("/flights/:id", s.flightsService.GetFlight)
+	r.GET("/flights/all", s.flightsService.GetFlights)
 	r.PUT("/flights/:id", s.flightsService.UpdateFlight)
 	r.DELETE("/flights/:id", s.flightsService.DeleteFlight)
 
-	log.Println("Server is running on port 8080...")
-	if err := r.Run(":8080"); err != nil {
+	log.Printf("Server is running on port %s...", s.cfg.serverPort) // используем порт из конфигурации
+	if err := r.Run(":" + s.cfg.serverPort); err != nil {           // запускаем сервер на порту из конфигурации
 		log.Fatal("Failed to start server:", err)
 	}
 }
