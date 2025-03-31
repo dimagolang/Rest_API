@@ -1,7 +1,6 @@
 package http_server
 
 import (
-	"Rest_API/config"
 	"Rest_API/internal/services"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -11,17 +10,17 @@ import (
 // Server структура сервера с роутингом и зависимостями
 type Server struct {
 	flightsService *services.FlightService
-	config         *config.Config // Добавляем конфигурацию
+	cfg            struct{ serverPort string } // Добавляем конфигурацию
 }
 
 // NewServer создает экземпляр HTTP-сервера с настройкой роутинга
 func NewServer(
 	flightsService *services.FlightService,
-	config *config.Config, // Передаем конфигурацию
+	serverPort string, // Передаем конфигурацию
 ) *Server {
 	server := &Server{
 		flightsService: flightsService,
-		config:         config, // Сохраняем конфигурацию
+		cfg:            struct{ serverPort string }{serverPort}, // Сохраняем конфигурацию
 	}
 
 	return server
@@ -43,8 +42,8 @@ func (s *Server) Run() {
 	r.PUT("/flights/:id", s.flightsService.UpdateFlight)
 	r.DELETE("/flights/:id", s.flightsService.DeleteFlight)
 
-	log.Printf("Server is running on port %s...", s.config.ServerPort) // используем порт из конфигурации
-	if err := r.Run(":" + s.config.ServerPort); err != nil {           // запускаем сервер на порту из конфигурации
+	log.Printf("Server is running on port %s...", s.cfg.serverPort) // используем порт из конфигурации
+	if err := r.Run(":" + s.cfg.serverPort); err != nil {           // запускаем сервер на порту из конфигурации
 		log.Fatal("Failed to start server:", err)
 	}
 }

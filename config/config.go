@@ -1,23 +1,14 @@
 package config
 
 import (
-	"context"
-	"fmt"
 	"log/slog"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
 // Config struct holds the database configuration
 type Config struct {
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
 	ServerPort string
 }
 
@@ -40,32 +31,10 @@ func LoadConfig() (*Config, error) {
 	}
 
 	config := &Config{
-		DBHost:     viper.GetString("DB_HOST"),
-		DBPort:     viper.GetString("DB_PORT"),
-		DBUser:     viper.GetString("DB_USER"),
-		DBPassword: viper.GetString("DB_PASSWORD"),
-		DBName:     viper.GetString("DB_NAME"),
+
 		ServerPort: viper.GetString("SERVER_PORT"),
 	}
 
 	slog.Info("Configuration loaded successfully")
 	return config, nil
-}
-
-func GetDBConnect(cfg *Config) (*pgx.Conn, error) {
-	dbURL := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		cfg.DBUser, cfg.DBPassword, cfg.DBHost, cfg.DBPort, cfg.DBName,
-	)
-
-	slog.Info("Connecting to Postgres", "url", dbURL)
-
-	conn, err := pgx.Connect(context.Background(), dbURL)
-	if err != nil {
-		slog.Error("Database connection failed", "error", err)
-		return nil, errors.Wrap(err, "unable to connect to database")
-	}
-
-	slog.Info("Connected to PostgreSQL successfully")
-	return conn, nil
 }
