@@ -20,7 +20,7 @@ func NewFlightsRepo(db *pgx.Conn) *FlightsRepo {
 	return &FlightsRepo{db: db}
 }
 
-func (r *FlightsRepo) GetAll(ctx context.Context) ([]models.Flight, error) {
+func (r *FlightsRepo) GetAllFlightsFromDB(ctx context.Context) ([]models.Flight, error) {
 	rows, err := r.db.Query(ctx, "SELECT * FROM public.flights")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch flights from database")
@@ -41,4 +41,57 @@ func (r *FlightsRepo) GetAll(ctx context.Context) ([]models.Flight, error) {
 	}
 
 	return flights, nil
+}
+
+func (r *FlightsRepo) InsertFlightToDB(ctx context.Context, flight *models.Flight) error {
+	err := r.db.QueryRow(ctx,
+		"INSERT INTO public.flights (destination_from, destination_to, delete_at) VALUES ($1, $2, $3) RETURNING id",
+		flight.DestinationFrom, flight.DestinationTo, flight.DeleteAt,
+	).Scan(&flight.FlightID)
+
+	if err != nil {
+		return errors.Wrap(err, "failed to insert flight")
+	}
+	return nil
+}
+
+func (r *FlightsRepo) GetFlightByIDFromDB(ctx context.Context, id int) (*models.Flight, error) {
+	var flight models.Flight
+	err := r.db.QueryRow(ctx,
+		"SELECT id, destination_from, destination_to, delete_at FROM public.flights WHERE id = $1 AND delete_at = 0",
+		id,
+	).Scan(&flight.FlightID, &flight.DestinationFrom, &flight.DestinationTo, &flight.DeleteAt)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "flight not found")
+	}
+	return &flight, nil
+}
+
+func (r *FlightsRepo) UpdateFlightInDB(ctx context.Context, flight *models.Flight) error {
+	commandTag, err := r.db.Exec(ctx,
+		"UPDATE public.flights SET destination_from = $1, destination_to = $2 WHERE id = $3",
+		flight.DestinationFrom, flight.DestinationTo, flight.FlightID)
+
+	if err != nil {
+		return errors.Wrap(err, "failed to update flight")
+	}
+	if commandTag.RowsAffected() == 0 {
+		return pgx.ErrNoRows // ничего не обновлено (возможно, soft deleted)
+	}
+	return nil
+}
+
+func (r *FlightsRepo) DeleteFlightFromDB(ctx context.Context, id int) error {
+	commandTag, err := r.db.Exec(ctx,
+		"UPDATE public.flights SET delete_at = EXTRACT(EPOCH FROM NOW())::BIGINT WHERE id = $1 AND delete_at = 0",
+		id)
+
+	if err != nil {
+		return errors.Wrap(err, "failed to delete flight")
+	}
+	if commandTag.RowsAffected() == 0 {
+		return pgx.ErrNoRows // ничего не удалено (возможно, уже удалено)
+	}
+	return nil
 }
