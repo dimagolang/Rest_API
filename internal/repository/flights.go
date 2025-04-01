@@ -58,7 +58,7 @@ func (r *FlightsRepo) InsertFlightToDB(ctx context.Context, flight *models.Fligh
 func (r *FlightsRepo) GetFlightByIDFromDB(ctx context.Context, id int) (*models.Flight, error) {
 	var flight models.Flight
 	err := r.db.QueryRow(ctx,
-		"SELECT id, destination_from, destination_to, delete_at FROM public.flights WHERE id = $1 AND delete_at = 0",
+		"SELECT * FROM public.flights WHERE id = $1",
 		id,
 	).Scan(&flight.FlightID, &flight.DestinationFrom, &flight.DestinationTo, &flight.DeleteAt)
 
@@ -84,7 +84,7 @@ func (r *FlightsRepo) UpdateFlightInDB(ctx context.Context, flight *models.Fligh
 
 func (r *FlightsRepo) DeleteFlightFromDB(ctx context.Context, id int) error {
 	commandTag, err := r.db.Exec(ctx,
-		"UPDATE public.flights SET delete_at = EXTRACT(EPOCH FROM NOW())::BIGINT WHERE id = $1 AND delete_at = 0",
+		"DELETE FROM public.flights WHERE id = $1",
 		id)
 
 	if err != nil {

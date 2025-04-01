@@ -4,7 +4,9 @@ import (
 	"Rest_API/internal/models"
 	"Rest_API/internal/repository"
 	"context"
+	"errors"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"net/http"
 	"sync"
 
@@ -72,6 +74,12 @@ func (s *FlightService) GetFlight(c *gin.Context) {
 func (s *FlightService) GetFlights(c *gin.Context) {
 	flights, err := s.flightsRepo.GetAllFlightsFromDB(context.Background())
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No flights found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		}
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "All flights", "flights": flights})

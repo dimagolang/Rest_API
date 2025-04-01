@@ -6,9 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="cfb6d95f-ce68-4656-a857-1385a3bbc40d" name="Changes" comment="feat: feat db">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Dockerfile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/compose.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/app/app.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/app/app.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,10 +29,25 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="GitHubPullRequestSearchHistory">{
-  &quot;lastFilter&quot;: {
-    &quot;state&quot;: &quot;OPEN&quot;,
-    &quot;assignee&quot;: &quot;dimagolang&quot;
-  }
+  &quot;lastFilter&quot;: {}
+}</component>
+  <component name="GitHubPullRequestState">{
+  &quot;prStates&quot;: [
+    {
+      &quot;id&quot;: {
+        &quot;id&quot;: &quot;PR_kwDOOEpPfs6OHYKY&quot;,
+        &quot;number&quot;: 1
+      },
+      &quot;lastSeen&quot;: 1743507058511
+    },
+    {
+      &quot;id&quot;: {
+        &quot;id&quot;: &quot;PR_kwDOOEpPfs6Qu-d5&quot;,
+        &quot;number&quot;: 3
+      },
+      &quot;lastSeen&quot;: 1743507084592
+    }
+  ]
 }</component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
@@ -75,7 +87,7 @@
     "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
     "git-widget-placeholder": "03/users",
     "go.import.settings.migrated": "true",
-    "last_opened_file_path": "C:/Users/ДмитрийАлександрович/Desktop/n8n-main",
+    "last_opened_file_path": "C:/Users/ДмитрийАлександрович/GolandProjects/Rest_API",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
@@ -172,7 +184,7 @@
                   <entry key="branch">
                     <value>
                       <list>
-                        <option value="dev" />
+                        <option value="03/users" />
                       </list>
                     </value>
                   </entry>
@@ -194,16 +206,5 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/internal/app/app.go</url>
-          <line>43</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>
