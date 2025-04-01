@@ -9,9 +9,12 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
+	"log/slog"
+	"os"
 )
 
 var viperInstance *viper.Viper
+var dbConn *pgx.Conn
 
 type App struct {
 	cfg    *config.Config
@@ -36,15 +39,19 @@ func (a *App) Init() {
 	}
 
 	viperInstance = conf
-	a.setConfig()
 
 	// Подключение к базе данных
-	conn, err := pgx.Connect(context.Background(), a.cfg.DatabaseURL)
+	a.cfg, err = config.LoadConfig()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Не удалось подключиться к базе данных")
-		return
+		log.Fatal().Err(err).Msg("Failed to load config")
 	}
-	a.db = conn
+
+	dbConn, err = config.GetDBConnect(a.cfg)
+	if err != nil {
+		slog.Error("Database connection failed", "error", err)
+		os.Exit(1)
+	}
+	defer dbConn.Close(context.Background())
 
 	// Создание сервиса
 	flightsService := service.NewFlightService(a.db)
@@ -53,13 +60,6 @@ func (a *App) Init() {
 	a.server = http_server.NewServer(flightsService, *a.cfg)
 
 	log.Info().Msg(fmt.Sprintf("Инициализация завершена. Сервер будет запущен на порту %s", a.cfg.ServerPort))
-}
-
-func (a *App) setConfig() {
-	a.cfg = &config.Config{
-		ServerPort:  viperInstance.GetString("SERVER_PORT"),
-		DatabaseURL: viperInstance.GetString("DATABASE_URL"),
-	}
 }
 
 func (a *App) Run() {
