@@ -1,9 +1,10 @@
 package service
 
 import (
-	"fmt"
+	"context"
+	"github.com/jackc/pgx/v4"
 	"net/http"
-	"sync"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,21 +13,15 @@ type Flight struct {
 	FlightID        int    `json:"flight_id"`
 	DestinationFrom string `json:"destination_from"`
 	DestinationTo   string `json:"destination_to"`
+	DeleteAt        int64  `json:"delete_at"`
 }
+
 type FlightService struct {
-	flights map[int]Flight
+	db *pgx.Conn
 }
 
-var (
-	flightIDCounter = 1
-	mutex           sync.Mutex
-)
-
-func NewFlightService() *FlightService {
-
-	return &FlightService{
-		flights: make(map[int]Flight),
-	}
+func NewFlightService(db *pgx.Conn) *FlightService {
+	return &FlightService{db: db}
 }
 
 func (s *FlightService) CreateFlight(c *gin.Context) {
@@ -36,92 +31,98 @@ func (s *FlightService) CreateFlight(c *gin.Context) {
 		return
 	}
 
-	mutex.Lock()
-	flight.FlightID = flightIDCounter
-	flightIDCounter++
-	mutex.Unlock()
-
-	s.flights[flight.FlightID] = flight
+	err := s.db.QueryRow(context.Background(),
+		"INSERT INTO flights (destination_from, destination_to) VALUES ($1, $2) RETURNING id",
+		flight.DestinationFrom, flight.DestinationTo).Scan(&flight.FlightID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert flight"})
+		return
+	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Flight created", "flight": flight})
 }
 
 func (s *FlightService) GetFlight(c *gin.Context) {
-	id := c.Param("id")
-	flightID := convertID(id)
-	if flightID == 0 {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid flight ID"})
 		return
 	}
 
-	flight, exists := s.flights[flightID]
-	if !exists {
+	var flight Flight
+	err = s.db.QueryRow(context.Background(),
+		"SELECT id, destination_from, destination_to FROM flights WHERE id=$1 AND deleted_at IS NULL", id).
+		Scan(&flight.FlightID, &flight.DestinationFrom, &flight.DestinationTo)
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Flight not found"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Flight details", "flight": flight})
 }
+
 func (s *FlightService) GetFlights(c *gin.Context) {
+	rows, err := s.db.Query(context.Background(), "SELECT id, destination_from, destination_to FROM flights WHERE deleted_at IS NULL")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch flights"})
+		return
+	}
+	defer rows.Close()
 
-	capacity := len(s.flights)
-
-	flights := make([]Flight, 0, capacity)
-
-	for _, flight := range s.flights {
-		flights = append(flights, flight)
+	var flights []Flight
+	for rows.Next() {
+		var f Flight
+		if err := rows.Scan(&f.FlightID, &f.DestinationFrom, &f.DestinationTo); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error scanning flight"})
+			return
+		}
+		flights = append(flights, f)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "All flights", "flights": flights})
 }
 
 func (s *FlightService) UpdateFlight(c *gin.Context) {
-	id := c.Param("id")
-	flightID := convertID(id)
-	if flightID == 0 {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid flight ID"})
 		return
 	}
 
-	var updatedFlight Flight
-	if err := c.ShouldBindJSON(&updatedFlight); err != nil {
+	var flight Flight
+	if err := c.ShouldBindJSON(&flight); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
 
-	if _, exists := s.flights[flightID]; !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Flight not found"})
+	cmd, err := s.db.Exec(context.Background(),
+		"UPDATE flights SET destination_from=$1, destination_to=$2 WHERE id=$3 AND deleted_at IS NULL",
+		flight.DestinationFrom, flight.DestinationTo, id)
+	if err != nil || cmd.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Flight not found or not updated"})
 		return
 	}
 
-	updatedFlight.FlightID = flightID
-	s.flights[flightID] = updatedFlight
-
-	c.JSON(http.StatusOK, gin.H{"message": "Flight updated", "flight": updatedFlight})
+	flight.FlightID = id
+	c.JSON(http.StatusOK, gin.H{"message": "Flight updated", "flight": flight})
 }
 
 func (s *FlightService) DeleteFlight(c *gin.Context) {
-	id := c.Param("id")
-	flightID := convertID(id)
-	if flightID == 0 {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid flight ID"})
 		return
 	}
 
-	if _, exists := s.flights[flightID]; !exists {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Flight not found"})
+	cmd, err := s.db.Exec(context.Background(),
+		"UPDATE flights SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL", id)
+	if err != nil || cmd.RowsAffected() == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Flight not found or already deleted"})
 		return
 	}
 
-	delete(s.flights, flightID)
-	c.JSON(http.StatusOK, gin.H{"message": "Flight deleted", "id": flightID})
-}
-
-func convertID(id string) int {
-	var flightID int
-	_, err := fmt.Sscanf(id, "%d", &flightID)
-	if err != nil {
-		return 0
-	}
-	return flightID
+	c.JSON(http.StatusOK, gin.H{"message": "Flight deleted", "id": id})
 }
