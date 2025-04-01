@@ -50,6 +50,7 @@ func LoadConfig() (*Config, error) {
 		DBUser:     viper.GetString("DB_USER"),
 		DBPassword: viper.GetString("DB_PASSWORD"),
 		DBName:     viper.GetString("DB_NAME"),
+		ServerPort: viper.GetString("SERVER_PORT"),
 	}
 
 	slog.Info("Configuration loaded successfully")

@@ -3,6 +3,7 @@ package app
 import (
 	"Rest_API/internal/config"
 	"Rest_API/internal/http_server"
+	"Rest_API/internal/repository"
 	"Rest_API/internal/service"
 	"context"
 	"fmt"
@@ -46,15 +47,17 @@ func (a *App) Init() {
 		log.Fatal().Err(err).Msg("Failed to load config")
 	}
 
-	dbConn, err = config.GetDBConnect(a.cfg)
+	a.db, err = config.GetDBConnect(a.cfg)
 	if err != nil {
 		slog.Error("Database connection failed", "error", err)
 		os.Exit(1)
 	}
-	defer dbConn.Close(context.Background())
+
+	//создание репозитория
+	flightsRepo := repository.NewFlightsRepo(a.db)
 
 	// Создание сервиса
-	flightsService := service.NewFlightService(a.db)
+	flightsService := service.NewFlightService(flightsRepo)
 
 	// Создание HTTP-сервера
 	a.server = http_server.NewServer(flightsService, *a.cfg)
