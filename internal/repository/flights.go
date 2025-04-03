@@ -5,6 +5,7 @@ import (
 	"context"
 	"github.com/jackc/pgx/v4"
 	"github.com/pkg/errors"
+	"log"
 )
 
 // создать структуру FlightsRepo у которой будет подключение к БД
@@ -80,6 +81,35 @@ func (r *FlightsRepo) UpdateFlightInDB(ctx context.Context, flight *models.Fligh
 		return pgx.ErrNoRows // ничего не обновлено (возможно, soft deleted)
 	}
 	return nil
+}
+
+func (r *FlightsRepo) GetFlightsByCityFromDB(ctx context.Context, city string) ([]models.Flight, error) {
+	query := `SELECT id, destination_from, destination_to FROM flights WHERE destination_from = $1 OR destination_to = $1`
+	rows, err := r.db.Query(ctx, query, city)
+	if err != nil {
+		log.Println("DB query error:", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var flights []models.Flight
+	for rows.Next() {
+		var flight models.Flight
+		if err := rows.Scan(
+			&flight.FlightID, &flight.DestinationFrom, &flight.DestinationTo,
+		); err != nil {
+			log.Println("Error scanning row:", err)
+			return nil, err
+		}
+		flights = append(flights, flight)
+	}
+
+	if len(flights) == 0 {
+		log.Println("No flights found for city:", city)
+		return nil, pgx.ErrNoRows
+	}
+
+	return flights, nil
 }
 
 func (r *FlightsRepo) DeleteFlightFromDB(ctx context.Context, id int) error {

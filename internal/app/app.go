@@ -1,10 +1,11 @@
 package app
 
 import (
-	"Rest_API/internal/config"
+	"Rest_API/config"
 	"Rest_API/internal/http_server"
 	"Rest_API/internal/repository"
 	"Rest_API/internal/service"
+	"Rest_API/internal/storage"
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v4"
@@ -47,7 +48,7 @@ func (a *App) Init() {
 		log.Fatal().Err(err).Msg("Failed to load config")
 	}
 
-	a.db, err = config.GetDBConnect(a.cfg)
+	a.db, err = storage.GetDBConnect(a.cfg)
 	if err != nil {
 		slog.Error("Database connection failed", "error", err)
 		os.Exit(1)

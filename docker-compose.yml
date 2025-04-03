@@ -11,4 +11,6 @@ services:
     ports:
       - "${DB_PORT}:${DB_PORT}"
     volumes:
-      - ./internal/pg/data:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
+volumes:
+  pg_data:

@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgx/v4"
+	"log"
 	"net/http"
-	"sync"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,11 +22,6 @@ type FlightService struct {
 	flightsRepo *repository.FlightsRepo
 	flights     map[int]Flight
 }
-
-var (
-	flightIDCounter = 1
-	mutex           sync.Mutex
-)
 
 func NewFlightService(flightsRepo *repository.FlightsRepo) *FlightService {
 
@@ -42,9 +37,7 @@ func (s *FlightService) CreateFlight(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
 		return
 	}
-
 	flight.DeleteAt = 0
-
 	err := s.flightsRepo.InsertFlightToDB(context.Background(), &flight)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB insert error"})
@@ -126,6 +119,27 @@ func (s *FlightService) DeleteFlight(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Flight deleted", "id": flightID})
+}
+
+func (s *FlightService) GetFlightsByCity(c *gin.Context) {
+	city := c.Query("city") // Получаем город из query-параметров
+	if city == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "City parameter is required"})
+		return
+	}
+
+	flights, err := s.flightsRepo.GetFlightsByCityFromDB(context.Background(), city)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No flights found for the city", "flights": make([]models.Flight, 0)})
+		} else {
+			log.Println("Database error:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error", "details": err.Error()})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Flights found", "flights": flights})
 }
 
 func convertID(id string) int {

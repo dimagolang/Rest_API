@@ -1,7 +1,7 @@
 package http_server
 
 import (
-	"Rest_API/internal/config"
+	"Rest_API/config"
 	"Rest_API/internal/service"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -38,6 +38,7 @@ func (s *Server) Run() {
 
 	// Роуты для рейсов
 	r.POST("/flight", s.flightsService.CreateFlight)
+	r.GET("get-flights", s.flightsService.GetFlightsByCity)
 	r.GET("/flights/:id", s.flightsService.GetFlight)
 	r.GET("/flights/all", s.flightsService.GetFlights)
 	r.PUT("/flights/:id", s.flightsService.UpdateFlight)

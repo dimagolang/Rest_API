@@ -8,4 +8,5 @@ type flights interface {
 	GetFlights(c *gin.Context)
 	UpdateFlight(c *gin.Context)
 	DeleteFlight(c *gin.Context)
+	GetFlightsByCity(c *gin.Context)
 }
